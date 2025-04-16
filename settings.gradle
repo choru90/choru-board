@@ -1,0 +1,4 @@
+rootProject.name = 'choru-board'
+
+
+include 'service:article'
