@@ -2,3 +2,5 @@ rootProject.name = 'choru-board'
 
 
 include 'service:article'
+include 'common'
+include 'common:snowflake'
