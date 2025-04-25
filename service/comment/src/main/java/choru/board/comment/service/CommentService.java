@@ -1,11 +1,11 @@
-package choru.board.article.service;
+package choru.board.comment.service;
 
-import choru.board.article.entity.Comment;
-import choru.board.article.repository.CommentRepository;
-import choru.board.article.service.request.CommentCreateRequest;
-import choru.board.article.service.request.CommentUpdateRequest;
-import choru.board.article.service.response.CommentPageResponse;
-import choru.board.article.service.response.CommentResponse;
+import choru.board.article.service.PageLimitCalculator;
+import choru.board.comment.entity.Comment;
+import choru.board.comment.repository.CommentRepository;
+import choru.board.comment.service.request.CommentCreateRequest;
+import choru.board.comment.service.response.CommentPageResponse;
+import choru.board.comment.service.response.CommentResponse;
 import kuke.board.common.snowflake.Snowflake;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,10 +13,79 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static java.util.function.Predicate.not;
+
 @Service
 @RequiredArgsConstructor
 public class CommentService {
 
     private final Snowflake snowflake = new Snowflake();
+    private final CommentRepository commentRepository;
+
+    @Transactional
+    public CommentResponse create(CommentCreateRequest request) {
+        Comment parent = findParent(request);
+        Comment comment = commentRepository.save(
+                Comment.create(
+                        snowflake.nextId(),
+                        request.getContent(),
+                        parent == null ? null : parent.getParentCommentId(),
+                        request.getArticleId(),
+                        request.getWriterId()
+                )
+        );
+        return CommentResponse.from(comment);
+    }
+
+    private Comment findParent(CommentCreateRequest request) {
+        Long parentCommentId = request.getParentCommentId();
+        if( parentCommentId == null ) {
+            return null;
+        }
+        return commentRepository.findById(parentCommentId)
+                .filter(not(Comment::getDeleted))
+                .filter(Comment::isRoot)
+                .orElseThrow();
+    }
+
+    public CommentResponse read(Long commentId) {
+        return CommentResponse.from(commentRepository.findById(commentId).orElseThrow());
+    }
+
+    @Transactional
+    public void delete(Long commentId){
+        commentRepository.findById(commentId)
+                .filter(not(Comment::getDeleted))
+                .ifPresent(comment -> {
+                    if(hasChildren(comment)){
+                        comment.delete();
+                    } else {
+                        delete(comment);
+                    }
+                });
+    }
+
+    private boolean hasChildren(Comment comment) {
+        return commentRepository.countBy(comment.getArticleId(), comment.getCommentId(), 2L) == 2;
+    }
+
+    private void delete(Comment comment){
+        commentRepository.delete(comment);
+        if(!comment.isRoot()){
+            commentRepository.findById(comment.getParentCommentId())
+                    .filter(not(Comment::getDeleted))
+                    .filter(not(this::hasChildren))
+                    .ifPresent(this::delete);
+        };
+    }
+
+    public CommentPageResponse readAll(Long articleId, Long page, Long pageSize) {
+        return CommentPageResponse.of(
+                commentRepository.findAll(articleId, (page - 1) * pageSize, pageSize).stream()
+                        .map(CommentResponse::from)
+                        .toList(),
+                commentRepository.count(articleId, PageLimitCalculator.calculatePageLimit(page, pageSize, 10L))
+        );
+    }
 
 }

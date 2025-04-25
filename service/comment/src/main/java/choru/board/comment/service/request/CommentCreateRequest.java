@@ -1,4 +1,4 @@
-package choru.board.article.service.request;
+package choru.board.comment.service.request;
 
 import lombok.Getter;
 import lombok.ToString;
@@ -6,8 +6,8 @@ import lombok.ToString;
 @Getter
 @ToString
 public class CommentCreateRequest {
-    private String title;
+    private Long articleId;
     private String content;
+    private Long parentCommentId;
     private Long writerId;
-    private Long boardId;
 }

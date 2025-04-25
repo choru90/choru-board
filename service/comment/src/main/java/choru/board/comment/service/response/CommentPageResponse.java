@@ -1,20 +1,23 @@
-package choru.board.article.service.response;
+package choru.board.comment.service.response;
 
+import choru.board.comment.entity.Comment;
+import choru.board.comment.service.response.CommentResponse;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @ToString
 public class CommentPageResponse {
-    private List<CommentResponse> articleList;
-    private Long articleCount;
+    private List<CommentResponse> comments;
+    private Long commentCount;
 
-    public static CommentPageResponse of(List<CommentResponse> articleList, Long articleCount) {
+    public static CommentPageResponse of(List<CommentResponse> comments, Long commentCount) {
         CommentPageResponse response = new CommentPageResponse();
-        response.articleList = articleList;
-        response.articleCount = articleCount;
+        response.comments = comments;
+        response.commentCount = commentCount;
         return response;
     }
 
