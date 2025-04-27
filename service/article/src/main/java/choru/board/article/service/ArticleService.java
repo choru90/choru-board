@@ -1,12 +1,14 @@
 package choru.board.article.service;
 
 import choru.board.article.entity.Article;
+import choru.board.article.entity.BoardArticleCount;
 import choru.board.article.repository.ArticleRepository;
+import choru.board.article.repository.BoardArticleCountRepository;
 import choru.board.article.service.request.ArticleCreateRequest;
 import choru.board.article.service.request.ArticleUpdateRequest;
 import choru.board.article.service.response.ArticlePageResponse;
 import choru.board.article.service.response.ArticleResponse;
-import kuke.board.common.snowflake.Snowflake;
+import choru.board.common.snowflake.Snowflake;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +21,20 @@ public class ArticleService {
 
     private final Snowflake snowflake = new Snowflake();
     private final ArticleRepository articleRepository;
+    private final BoardArticleCountRepository boardArticleCountRepository;
 
     @Transactional
     public ArticleResponse create(ArticleCreateRequest request) {
         Article article = articleRepository.save(
                 Article.create(snowflake.nextId(), request.getTitle(), request.getContent(), request.getBoardId(), request.getWriterId())
         );
+        int result = boardArticleCountRepository.increase(request.getBoardId());
+        if (result == 0) {
+            boardArticleCountRepository.save(
+                    BoardArticleCount.init(request.getBoardId(), 1L)
+            );
+        }
+
         return ArticleResponse.from(article);
     }
 
@@ -35,10 +45,16 @@ public class ArticleService {
         return ArticleResponse.from(article);
     }
 
+    public ArticleResponse read(Long articleId) {
+        return ArticleResponse.from(articleRepository.findById(articleId).orElseThrow());
+    }
+
     @Transactional
     public void delete(Long articleId) {
         Article article = articleRepository.findById(articleId).orElseThrow();
         articleRepository.delete(article);
+        boardArticleCountRepository.decrease(article.getBoardId());
+
     }
 
     public ArticlePageResponse readAll(Long boardId, Long page, Long pageSize) {
@@ -60,7 +76,9 @@ public class ArticleService {
         return articles.stream().map(ArticleResponse::from).toList();
     }
 
-    public ArticleResponse read(Long articleId) {
-        return ArticleResponse.from(articleRepository.findById(articleId).orElseThrow());
+    public Long count(Long boardId) {
+        return boardArticleCountRepository.findById(boardId)
+                .map(BoardArticleCount::getArticleCount)
+                .orElse(0L);
     }
 }
