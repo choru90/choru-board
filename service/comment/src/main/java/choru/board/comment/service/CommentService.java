@@ -1,12 +1,12 @@
 package choru.board.comment.service;
 
-import choru.board.article.service.PageLimitCalculator;
+import choru.board.view.service.PageLimitCalculator;
 import choru.board.comment.entity.Comment;
 import choru.board.comment.repository.CommentRepository;
 import choru.board.comment.service.request.CommentCreateRequest;
 import choru.board.comment.service.response.CommentPageResponse;
 import choru.board.comment.service.response.CommentResponse;
-import choru.board.common.snowflake.Snowflake;
+import choru.board.common.event.Snowflake;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

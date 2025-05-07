@@ -3,7 +3,7 @@ package choru.board.comment.data;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import choru.board.comment.entity.Comment;
-import choru.board.common.snowflake.Snowflake;
+import choru.board.common.event.Snowflake;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
